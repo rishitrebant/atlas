@@ -1,0 +1,383 @@
+{
+  "version": 1,
+  "author": "ATLAS Project",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "board-mfrc522",
+      "id": "entryRFID",
+      "top": -220,
+      "left": 430,
+      "attrs": {
+        "uid": "01:02:03:04"
+      }
+    },
+    {
+      "type": "board-mfrc522",
+      "id": "exitRFID",
+      "top": 180,
+      "left": 430,
+      "attrs": {
+        "uid": "01:02:03:04"
+      }
+    },
+    {
+      "type": "wokwi-lcd1602",
+      "id": "lcd",
+      "top": 390,
+      "left": 470,
+      "attrs": {
+        "pins": "i2c",
+        "i2cAddress": "0x27"
+      }
+    },
+    {
+      "type": "wokwi-rgb-led",
+      "id": "entryRGB",
+      "top": -220,
+      "left": -360,
+      "attrs": {
+        "common": "cathode"
+      }
+    },
+    {
+      "type": "wokwi-rgb-led",
+      "id": "exitRGB",
+      "top": 180,
+      "left": -360,
+      "attrs": {
+        "common": "cathode"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "entryRRes",
+      "top": -280,
+      "left": -220,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "entryGRes",
+      "top": -220,
+      "left": -220,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "entryBRes",
+      "top": -160,
+      "left": -220,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "exitRRes",
+      "top": 120,
+      "left": -220,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "exitGRes",
+      "top": 180,
+      "left": -220,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "exitBRes",
+      "top": 240,
+      "left": -220,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzzer",
+      "top": 20,
+      "left": -350,
+      "attrs": {
+        "volume": "0.15"
+      }
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "entryServo",
+      "top": -120,
+      "left": 760,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-servo",
+      "id": "exitServo",
+      "top": 160,
+      "left": 760,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [
+      "esp:18",
+      "entryRFID:SCK",
+      "blue",
+      []
+    ],
+    [
+      "esp:19",
+      "entryRFID:MISO",
+      "yellow",
+      []
+    ],
+    [
+      "esp:23",
+      "entryRFID:MOSI",
+      "green",
+      []
+    ],
+    [
+      "esp:5",
+      "entryRFID:SDA",
+      "purple",
+      []
+    ],
+    [
+      "esp:21",
+      "entryRFID:RST",
+      "white",
+      []
+    ],
+    [
+      "esp:3V3",
+      "entryRFID:3.3V",
+      "red",
+      []
+    ],
+    [
+      "esp:GND.1",
+      "entryRFID:GND",
+      "black",
+      []
+    ],
+    [
+      "esp:18",
+      "exitRFID:SCK",
+      "blue",
+      []
+    ],
+    [
+      "esp:19",
+      "exitRFID:MISO",
+      "yellow",
+      []
+    ],
+    [
+      "esp:23",
+      "exitRFID:MOSI",
+      "green",
+      []
+    ],
+    [
+      "esp:27",
+      "exitRFID:SDA",
+      "purple",
+      []
+    ],
+    [
+      "esp:22",
+      "exitRFID:RST",
+      "white",
+      []
+    ],
+    [
+      "esp:3V3",
+      "exitRFID:3.3V",
+      "red",
+      []
+    ],
+    [
+      "esp:GND.1",
+      "exitRFID:GND",
+      "black",
+      []
+    ],
+    [
+      "esp:16",
+      "lcd:SDA",
+      "green",
+      []
+    ],
+    [
+      "esp:17",
+      "lcd:SCL",
+      "blue",
+      []
+    ],
+    [
+      "esp:5V",
+      "lcd:VCC",
+      "red",
+      []
+    ],
+    [
+      "lcd:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp:12",
+      "entryRRes:1",
+      "red",
+      []
+    ],
+    [
+      "entryRRes:2",
+      "entryRGB:R",
+      "red",
+      []
+    ],
+    [
+      "esp:13",
+      "entryGRes:1",
+      "green",
+      []
+    ],
+    [
+      "entryGRes:2",
+      "entryRGB:G",
+      "green",
+      []
+    ],
+    [
+      "esp:26",
+      "entryBRes:1",
+      "blue",
+      []
+    ],
+    [
+      "entryBRes:2",
+      "entryRGB:B",
+      "blue",
+      []
+    ],
+    [
+      "entryRGB:COM",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp:14",
+      "exitRRes:1",
+      "red",
+      []
+    ],
+    [
+      "exitRRes:2",
+      "exitRGB:R",
+      "red",
+      []
+    ],
+    [
+      "esp:4",
+      "exitGRes:1",
+      "green",
+      []
+    ],
+    [
+      "exitGRes:2",
+      "exitRGB:G",
+      "green",
+      []
+    ],
+    [
+      "esp:2",
+      "exitBRes:1",
+      "blue",
+      []
+    ],
+    [
+      "exitBRes:2",
+      "exitRGB:B",
+      "blue",
+      []
+    ],
+    [
+      "exitRGB:COM",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp:32",
+      "buzzer:1",
+      "orange",
+      []
+    ],
+    [
+      "buzzer:2",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp:25",
+      "entryServo:PWM",
+      "orange",
+      []
+    ],
+    [
+      "esp:5V",
+      "entryServo:V+",
+      "red",
+      []
+    ],
+    [
+      "entryServo:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "esp:33",
+      "exitServo:PWM",
+      "orange",
+      []
+    ],
+    [
+      "esp:5V",
+      "exitServo:V+",
+      "red",
+      []
+    ],
+    [
+      "exitServo:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ]
+  ],
+  "serialMonitor": {
+    "display": "always",
+    "newline": "lf"
+  }
+}

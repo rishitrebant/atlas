@@ -11,10 +11,31 @@
       "attrs": {}
     },
     {
+      "type": "wokwi-breadboard-half",
+      "id": "bbL",
+      "top": -60,
+      "left": -420,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-breadboard-half",
+      "id": "bbR",
+      "top": -60,
+      "left": 260,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-breadboard-half",
+      "id": "bbAcc",
+      "top": -420,
+      "left": -700,
+      "attrs": {}
+    },
+    {
       "type": "board-mfrc522",
       "id": "entryRFID",
       "top": -220,
-      "left": 430,
+      "left": 700,
       "attrs": {
         "uid": "01:02:03:04"
       }
@@ -23,7 +44,7 @@
       "type": "board-mfrc522",
       "id": "exitRFID",
       "top": 180,
-      "left": 430,
+      "left": 700,
       "attrs": {
         "uid": "01:02:03:04"
       }
@@ -41,8 +62,8 @@
     {
       "type": "wokwi-rgb-led",
       "id": "entryRGB",
-      "top": -220,
-      "left": -360,
+      "top": -400,
+      "left": -600,
       "attrs": {
         "common": "cathode"
       }
@@ -50,8 +71,8 @@
     {
       "type": "wokwi-rgb-led",
       "id": "exitRGB",
-      "top": 180,
-      "left": -360,
+      "top": -400,
+      "left": -450,
       "attrs": {
         "common": "cathode"
       }
@@ -59,8 +80,8 @@
     {
       "type": "wokwi-resistor",
       "id": "entryRRes",
-      "top": -280,
-      "left": -220,
+      "top": -330,
+      "left": -690,
       "attrs": {
         "value": "220"
       }
@@ -68,8 +89,8 @@
     {
       "type": "wokwi-resistor",
       "id": "entryGRes",
-      "top": -220,
-      "left": -220,
+      "top": -300,
+      "left": -690,
       "attrs": {
         "value": "220"
       }
@@ -77,8 +98,8 @@
     {
       "type": "wokwi-resistor",
       "id": "entryBRes",
-      "top": -160,
-      "left": -220,
+      "top": -270,
+      "left": -690,
       "attrs": {
         "value": "220"
       }
@@ -86,8 +107,8 @@
     {
       "type": "wokwi-resistor",
       "id": "exitRRes",
-      "top": 120,
-      "left": -220,
+      "top": -330,
+      "left": -540,
       "attrs": {
         "value": "220"
       }
@@ -95,8 +116,8 @@
     {
       "type": "wokwi-resistor",
       "id": "exitGRes",
-      "top": 180,
-      "left": -220,
+      "top": -300,
+      "left": -540,
       "attrs": {
         "value": "220"
       }
@@ -104,8 +125,8 @@
     {
       "type": "wokwi-resistor",
       "id": "exitBRes",
-      "top": 240,
-      "left": -220,
+      "top": -270,
+      "left": -540,
       "attrs": {
         "value": "220"
       }
@@ -113,8 +134,8 @@
     {
       "type": "wokwi-buzzer",
       "id": "buzzer",
-      "top": 20,
-      "left": -350,
+      "top": -400,
+      "left": -300,
       "attrs": {
         "volume": "0.15"
       }
@@ -123,14 +144,30 @@
       "type": "wokwi-servo",
       "id": "entryServo",
       "top": -120,
-      "left": 760,
+      "left": 1000,
       "attrs": {}
     },
     {
       "type": "wokwi-servo",
       "id": "exitServo",
       "top": 160,
-      "left": 760,
+      "left": 1000,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "ultrasonic",
+      "top": -420,
+      "left": -140,
+      "attrs": {
+        "distance": "20"
+      }
+    },
+    {
+      "type": "board-esp32-cam-ai-thinker",
+      "id": "esp32cam",
+      "top": 420,
+      "left": 900,
       "attrs": {}
     }
   ],
@@ -172,8 +209,8 @@
       []
     ],
     [
-      "esp:GND.1",
       "entryRFID:GND",
+      "bbL:tn.10",
       "black",
       []
     ],
@@ -214,8 +251,8 @@
       []
     ],
     [
-      "esp:GND.1",
       "exitRFID:GND",
+      "bbL:tn.11",
       "black",
       []
     ],
@@ -232,14 +269,14 @@
       []
     ],
     [
-      "esp:5V",
+      "bbL:tp.2",
       "lcd:VCC",
       "red",
       []
     ],
     [
       "lcd:GND",
-      "esp:GND.2",
+      "bbL:tn.2",
       "black",
       []
     ],
@@ -281,7 +318,7 @@
     ],
     [
       "entryRGB:COM",
-      "esp:GND.2",
+      "bbL:tn.8",
       "black",
       []
     ],
@@ -323,7 +360,7 @@
     ],
     [
       "exitRGB:COM",
-      "esp:GND.2",
+      "bbL:tn.9",
       "black",
       []
     ],
@@ -335,7 +372,7 @@
     ],
     [
       "buzzer:2",
-      "esp:GND.2",
+      "bbL:tn.3",
       "black",
       []
     ],
@@ -346,14 +383,14 @@
       []
     ],
     [
-      "esp:5V",
+      "bbL:tp.4",
       "entryServo:V+",
       "red",
       []
     ],
     [
       "entryServo:GND",
-      "esp:GND.2",
+      "bbL:tn.4",
       "black",
       []
     ],
@@ -364,14 +401,74 @@
       []
     ],
     [
-      "esp:5V",
+      "bbL:tp.5",
       "exitServo:V+",
       "red",
       []
     ],
     [
       "exitServo:GND",
+      "bbL:tn.5",
+      "black",
+      []
+    ],
+    [
+      "esp:15",
+      "ultrasonic:TRIG",
+      "yellow",
+      []
+    ],
+    [
+      "esp:34",
+      "ultrasonic:ECHO",
+      "green",
+      []
+    ],
+    [
+      "bbL:tp.6",
+      "ultrasonic:VCC",
+      "red",
+      []
+    ],
+    [
+      "ultrasonic:GND",
+      "bbL:tn.6",
+      "black",
+      []
+    ],
+    [
+      "bbL:tp.7",
+      "esp32cam:5V",
+      "red",
+      []
+    ],
+    [
+      "esp32cam:GND",
+      "bbL:tn.7",
+      "black",
+      []
+    ],
+    [
+      "esp:5V",
+      "bbL:tp.1",
+      "red",
+      []
+    ],
+    [
       "esp:GND.2",
+      "bbL:tn.1",
+      "black",
+      []
+    ],
+    [
+      "bbL:tp.1",
+      "bbR:tp.1",
+      "red",
+      []
+    ],
+    [
+      "bbL:tn.1",
+      "bbR:tn.1",
       "black",
       []
     ]

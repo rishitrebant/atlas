@@ -1,0 +1,16 @@
+{
+  "name": "atlas-blockchain",
+  "version": "0.2.0",
+  "private": true,
+  "description": "ATLAS AtlasRegistry smart contract + local dev chain",
+  "scripts": {
+    "node": "hardhat node",
+    "compile": "node scripts/compile.js",
+    "deploy": "node scripts/compile.js && node scripts/deploy.js"
+  },
+  "devDependencies": {
+    "ethers": "^6.13.0",
+    "hardhat": "^2.22.0",
+    "solc": "0.8.24"
+  }
+}

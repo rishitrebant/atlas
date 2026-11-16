@@ -162,13 +162,6 @@
       "attrs": {
         "distance": "20"
       }
-    },
-    {
-      "type": "board-esp32-cam-ai-thinker",
-      "id": "esp32cam",
-      "top": 420,
-      "left": 900,
-      "attrs": {}
     }
   ],
   "connections": [
@@ -433,18 +426,6 @@
     [
       "ultrasonic:GND",
       "bbL:tn.6",
-      "black",
-      []
-    ],
-    [
-      "bbL:tp.7",
-      "esp32cam:5V",
-      "red",
-      []
-    ],
-    [
-      "esp32cam:GND",
-      "bbL:tn.7",
       "black",
       []
     ],

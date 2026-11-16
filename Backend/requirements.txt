@@ -5,6 +5,7 @@ pydantic>=2.7
 pydantic-settings>=2.3
 psycopg2-binary>=2.9
 python-multipart>=0.0.9
+web3>=7.0
 
 # dev/test
 pytest>=8.0

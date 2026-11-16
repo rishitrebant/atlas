@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101827" />
+  <title>ATLAS — Identity & Verification</title>
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#dashboard" aria-label="ATLAS home">
+        <span class="brand-mark"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4 34 12v16L20 36 6 28V12z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m12 25 8-15 8 15M15.5 19h9" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span><strong>ATLAS</strong><small>Identity infrastructure</small></span>
+      </a>
+      <div class="side-label">WORKSPACE</div>
+      <nav class="nav-list" aria-label="Main navigation">
+        <button class="nav-item active" data-view="dashboard"><span class="nav-icon">◫</span> Overview</button>
+        <button class="nav-item" data-view="students"><span class="nav-icon">♙</span> Students <span class="nav-count" id="studentNavCount">—</span></button>
+        <button class="nav-item" data-view="credentials"><span class="nav-icon">▤</span> Credentials <span class="nav-count" id="credentialNavCount">—</span></button>
+        <button class="nav-item" data-view="gate"><span class="nav-icon">⇄</span> Campus gate <span class="nav-count" id="gateNavCount">—</span></button>
+        <button class="nav-item" data-view="verify"><span class="nav-icon">⌕</span> Verify a credential</button>
+        <button class="nav-item" data-view="audit"><span class="nav-icon">☷</span> Audit trail</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="phase-card"><span class="phase-dot"></span><div><strong>Phase 2 prototype</strong><small>Blockchain-backed proofs</small></div></div>
+        <p class="sidebar-note">Credential and gate-entry proof hashes are written to the AtlasRegistry smart contract on a local dev chain. No personal data goes on-chain.</p>
+        <div class="sidebar-footer">ATLAS · Local development</div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="breadcrumbs"><span>Workspace</span><span class="crumb-sep">/</span><strong id="breadcrumbTitle">Overview</strong></div>
+        <div class="top-actions">
+          <div class="server-status" id="serverStatus"><span class="status-dot"></span><span>Checking API…</span></div>
+          <button class="key-toggle" id="keyToggle" type="button"><span>⚿</span> Admin key</button>
+        </div>
+      </header>
+
+      <section class="key-panel" id="keyPanel" hidden>
+        <div class="key-panel-copy"><strong>Admin API key</strong><p>Used for protected actions such as student creation, credential issuance and revocation. This stays in this browser session.</p></div>
+        <div class="key-entry"><input id="adminKeyInput" type="password" autocomplete="off" spellcheck="false" value="change-me-in-.env" aria-label="Admin API key" /><button class="btn btn-primary" id="saveKeyBtn" type="button">Apply key</button></div>
+        <div class="key-entry" style="margin-top:10px"><input id="deviceKeyInput" type="password" autocomplete="off" spellcheck="false" value="change-me-device-key" aria-label="Device API key" /><span class="key-hint" style="align-self:center">Device key — only used by the “Simulate a scan” tester on the Campus gate page (the real ESP32 has its own copy).</span></div>
+        <span class="key-hint" id="keyHint">Default key matches the backend's local development fallback. If you changed Backend/.env, enter that value instead.</span>
+      </section>
+
+      <div class="content-wrap">
+        <section class="view active" id="view-dashboard">
+          <div class="welcome-row"><div><div class="eyebrow">IDENTITY WORKSPACE <span class="eyebrow-line"></span></div><h1>Good to see you.</h1><p class="page-subtitle">A live overview of your student identities and credential lifecycle.</p></div><button class="btn btn-primary" data-go="students" type="button"><span>＋</span> Register a student</button></div>
+          <div class="notice"><span class="notice-icon">i</span><div><strong>Phase 2 is running locally</strong><p>Records live in PostgreSQL; only SHA-256 proof hashes are written to the AtlasRegistry smart contract (local Hardhat chain). Gate scans from the ESP32 open the gate immediately and are logged on-chain in the background.</p></div><span class="notice-tag">LOCAL CHAIN</span></div>
+          <div class="stat-grid">
+            <article class="stat-card"><div class="stat-head"><span class="stat-icon indigo">♙</span><span class="stat-label">Student identities</span></div><div class="stat-value" id="statStudents">—</div><div class="stat-foot"><span id="statInside">— inside</span> · campus right now</div></article>
+            <article class="stat-card"><div class="stat-head"><span class="stat-icon teal">▤</span><span class="stat-label">Credentials issued</span></div><div class="stat-value" id="statCredentials">—</div><div class="stat-foot"><span id="statActive">— active</span> · <span id="statRevoked">— revoked</span></div></article>
+            <article class="stat-card"><div class="stat-head"><span class="stat-icon amber">⌕</span><span class="stat-label">Verification checks</span></div><div class="stat-value" id="statChecks">—</div><div class="stat-foot">Recorded checks in the audit log</div></article>
+            <article class="stat-card"><div class="stat-head"><span class="stat-icon slate">◈</span><span class="stat-label">System status</span></div><div class="stat-value status-value" id="statHealth">Checking</div><div class="stat-foot" id="statPhase">Waiting for backend response</div></article>
+          </div>
+          <div class="section-heading"><div><h2>Recent verification activity</h2><p>Latest checks recorded by the API.</p></div><button class="text-button" data-go="audit" type="button">View audit trail <span>→</span></button></div>
+          <div class="table-card"><div class="table-scroll"><table><thead><tr><th>RESULT</th><th>PROOF HASH</th><th>CHECKED AT</th><th>LOG ID</th></tr></thead><tbody id="dashboardActivity"><tr><td colspan="4" class="empty-cell">Loading activity…</td></tr></tbody></table></div></div>
+          <div class="quick-grid"><button class="quick-card" data-go="credentials" type="button"><span class="quick-icon teal">＋</span><span><strong>Issue a credential</strong><small>Generate a proof hash for a student</small></span><span class="quick-arrow">↗</span></button><button class="quick-card" data-go="verify" type="button"><span class="quick-icon indigo">⌕</span><span><strong>Verify a proof</strong><small>Check whether a credential is valid</small></span><span class="quick-arrow">↗</span></button></div>
+        </section>
+
+        <section class="view" id="view-students">
+          <div class="page-header"><div><div class="eyebrow">IDENTITY RECORDS</div><h1>Students</h1><p class="page-subtitle">Create and manage private student identity records.</p></div><div class="page-pill"><span class="tiny-dot"></span><span id="studentsTotalLabel">0 records</span></div></div>
+          <div class="two-column-layout">
+            <article class="panel form-panel"><div class="panel-heading"><span class="panel-symbol indigo">＋</span><div><h2>Register a student</h2><p>Fields marked with * are required.</p></div></div>
+              <form id="studentForm" class="stack-form">
+                <label>Student ID *<input name="student_id" required maxlength="50" placeholder="e.g. BMU2026001" /></label>
+                <label>Full name *<input name="full_name" required maxlength="200" placeholder="Student's full name" /></label>
+                <label>Email address *<input name="email" type="email" required maxlength="200" placeholder="student@university.edu" /></label>
+                <div class="form-row"><label>Phone<input name="phone" maxlength="30" placeholder="Optional" /></label><label>Course<input name="course" maxlength="200" placeholder="e.g. B.Tech CSE" /></label></div>
+                <label>Hostel / residence<input name="hostel" maxlength="100" placeholder="Optional" /></label>
+                <label>RFID card UID<input name="rfid_uid" maxlength="32" placeholder="e.g. 01020304 (shown in ESP32 serial monitor)" /></label>
+                <button class="btn btn-primary btn-full" type="submit">Create student record <span>→</span></button><p class="form-message" id="studentFormMessage" aria-live="polite"></p>
+              </form>
+            </article>
+            <article class="panel records-panel"><div class="panel-heading panel-heading-between"><div><h2>Student directory</h2><p>Most recently created records first.</p></div><button class="icon-button" id="refreshStudents" aria-label="Refresh students" title="Refresh" type="button">↻</button></div>
+              <div class="search-wrap"><span>⌕</span><input id="studentSearch" type="search" placeholder="Search name, ID or email…" /></div>
+              <div class="table-scroll"><table><thead><tr><th>STUDENT</th><th>COURSE</th><th>RFID UID</th><th>CREATED</th><th></th></tr></thead><tbody id="studentsTable"><tr><td colspan="5" class="empty-cell">Loading students…</td></tr></tbody></table></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-credentials">
+          <div class="page-header"><div><div class="eyebrow">ISSUANCE & LIFECYCLE</div><h1>Credentials</h1><p class="page-subtitle">Issue proof-backed credentials and manage their status.</p></div><div class="page-pill"><span class="tiny-dot"></span><span id="credentialsTotalLabel">0 credentials</span></div></div>
+          <article class="panel issue-panel"><div class="panel-heading"><span class="panel-symbol teal">✳</span><div><h2>Issue a new credential</h2><p>ATLAS generates a unique SHA-256 proof hash when the API accepts the request.</p></div></div>
+            <form id="credentialForm" class="credential-form">
+              <label>Student *<select name="student_id" id="credentialStudentSelect" required><option value="">Load student records first</option></select></label>
+              <label>Credential type *<select name="credential_type" required><option value="degree">Degree</option><option value="certificate">Certificate</option><option value="micro-credential">Micro-credential</option><option value="diploma">Diploma</option><option value="transcript">Transcript</option><option value="other">Other</option></select></label>
+              <label>Credential title *<input name="title" required maxlength="300" placeholder="e.g. B.Tech Computer Science" /></label>
+              <label>Issued by *<input name="issued_by" required maxlength="200" placeholder="e.g. Registrar's Office" /></label>
+              <button class="btn btn-primary" type="submit">Issue credential <span>→</span></button>
+            </form><p class="form-message" id="credentialFormMessage" aria-live="polite"></p>
+          </article>
+          <div class="section-heading"><div><h2>Issued credentials</h2><p>View proof hashes, verify, or revoke a credential.</p></div><button class="icon-button" id="refreshCredentials" aria-label="Refresh credentials" title="Refresh" type="button">↻</button></div>
+          <div class="table-card"><div class="table-scroll"><table><thead><tr><th>CREDENTIAL</th><th>STUDENT ID</th><th>STATUS / CHAIN</th><th>PROOF HASH</th><th>ISSUED</th><th>ACTIONS</th></tr></thead><tbody id="credentialsTable"><tr><td colspan="6" class="empty-cell">Loading credentials…</td></tr></tbody></table></div></div>
+        </section>
+
+        <section class="view" id="view-gate">
+          <div class="page-header"><div><div class="eyebrow">PHYSICAL ACCESS</div><h1>Campus gate</h1><p class="page-subtitle">Live entry / exit activity from the RFID gate. Every granted pass is hashed and logged on-chain.</p></div><button class="btn btn-secondary" id="refreshGate" type="button">↻ Refresh</button></div>
+          <div class="two-column-layout">
+            <article class="panel"><div class="panel-heading"><span class="panel-symbol teal">⇄</span><div><h2>Who's on campus</h2><p>Updates on every granted scan.</p></div></div>
+              <div class="gate-board" id="gateBoard"><div class="empty-cell">Loading…</div></div>
+              <div class="mini-label" style="margin-top:18px">SIMULATE A SCAN (no hardware needed)</div>
+              <form id="simScanForm" class="stack-form" style="margin-top:8px">
+                <label>Card UID<input name="uid" id="simUid" required placeholder="e.g. 01020304" /></label>
+                <div class="form-row"><button class="btn btn-primary" type="submit" data-dir="entry">Entry scan →</button><button class="btn btn-secondary" type="submit" data-dir="exit">Exit scan →</button></div>
+                <p class="form-message" id="simScanMessage" aria-live="polite"></p>
+              </form>
+            </article>
+            <article class="panel"><div class="panel-heading panel-heading-between"><div><h2>Gate log</h2><p>Latest 200 scans. Denied scans are recorded here but not written on-chain.</p></div></div>
+              <div class="table-scroll"><table><thead><tr><th>TIME</th><th>STUDENT</th><th>GATE</th><th>RESULT</th><th>CHAIN</th><th>PROOF</th></tr></thead><tbody id="gateTable"><tr><td colspan="6" class="empty-cell">Loading gate log…</td></tr></tbody></table></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-verify">
+          <div class="page-header"><div><div class="eyebrow">PUBLIC VERIFICATION PORTAL</div><h1>Verify a credential</h1><p class="page-subtitle">Anyone with a proof hash can check the current credential status.</p></div><div class="public-pill"><span class="public-dot"></span> Public endpoint</div></div>
+          <div class="verification-layout">
+            <article class="panel verify-form-panel"><div class="verify-emblem"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 5 53 13v16c0 14-9 24-21 30C20 53 11 43 11 29V13z" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="m21 32 7 7 15-16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h2>Check credential authenticity</h2><p>Enter the SHA-256 proof hash generated during credential issuance. No admin key is required for this check.</p>
+              <form id="verifyForm" class="stack-form"><label>Credential proof hash<input name="proof_hash" id="proofHashInput" required spellcheck="false" placeholder="Paste the 64-character proof hash" /></label><button class="btn btn-primary btn-full" type="submit">Verify credential <span>→</span></button></form>
+              <div class="verify-result" id="verifyResult" hidden aria-live="polite"></div>
+              <div class="privacy-note"><span>◇</span><span>Public verification returns credential metadata only. It does not expose private student details.</span></div>
+            </article>
+            <aside class="panel verify-info-panel"><div class="mini-label">HOW IT WORKS</div><div class="step-line"><span>1</span><div><strong>Present proof hash</strong><p>Use the hash returned when the credential was issued.</p></div></div><div class="step-line"><span>2</span><div><strong>ATLAS checks the record</strong><p>The API checks the database and reads the AtlasRegistry smart contract directly.</p></div></div><div class="step-line"><span>3</span><div><strong>Receive a result</strong><p>Result is verified, invalid, or revoked.</p></div></div><div class="phase-warning"><strong>Local dev chain</strong><p>Proofs are on a local Hardhat test chain, not a public network. The on-chain check proves the hash was logged and whether it was revoked.</p></div></aside>
+          </div>
+        </section>
+
+        <section class="view" id="view-audit">
+          <div class="page-header"><div><div class="eyebrow">TRACEABILITY</div><h1>Audit trail</h1><p class="page-subtitle">A record of proof-hash verification attempts made against the API.</p></div><button class="btn btn-secondary" id="refreshLogs" type="button">↻ Refresh logs</button></div>
+          <div class="notice audit-notice"><span class="notice-icon">i</span><div><strong>Admin access required</strong><p>The audit endpoint is protected by the admin API key. Each verification attempt, including invalid hashes, may appear here.</p></div></div>
+          <div class="table-card"><div class="table-scroll"><table><thead><tr><th>RESULT</th><th>PROOF HASH CHECKED</th><th>CHECKED AT</th><th>LOG ID</th></tr></thead><tbody id="auditTable"><tr><td colspan="4" class="empty-cell">Loading audit logs…</td></tr></tbody></table></div><div class="table-foot" id="auditFoot">Showing the latest records returned by the API.</div></div>
+        </section>
+
+        <footer class="app-footer"><span>ATLAS Identity & Verification</span><span>Phase 2 · Local chain mode</span><a href="/docs" target="_blank" rel="noreferrer">API docs ↗</a></footer>
+      </div>
+    </main>
+  </div>
+  <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+  <script src="/app.js"></script>
+</body>
+</html>

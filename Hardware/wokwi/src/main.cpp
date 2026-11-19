@@ -3,11 +3,6 @@
 #include <Wire.h>
 #include <MFRC522.h>
 #include <LiquidCrystal_I2C.h>
-#include <WiFi.h>
-#include <HTTPClient.h>
-#include <ArduinoJson.h>
-
-#include "config.h"
 
 // Arduino-ESP32 core 3.x replaced the old channel-based LEDC API
 // (ledcSetup/ledcAttachPin/ledcWrite(channel,...)) with a new pin-based one
@@ -98,6 +93,23 @@ const int PRESENCE_CM = 25;
 // How often (ms) we poll the sensor while idle, just to update the LCD.
 const unsigned long PRESENCE_POLL_INTERVAL = 300;
 
+// ===================== Student "database" (placeholder) =====================
+struct Student {
+    const char* id;
+    const char* name;
+    String uid;
+    bool inside;
+};
+
+Student students[] = {
+    {"ATLAS001", "Rishit",   "01020304", false},
+    {"ATLAS002", "Student2", "11223344", false},
+    {"ATLAS003", "Student3", "55667788", false}
+};
+
+const int STUDENT_COUNT =
+    sizeof(students) / sizeof(students[0]);
+
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -155,6 +167,18 @@ String getUID(MFRC522& reader) {
 
     uid.toUpperCase();
     return uid;
+}
+
+int findStudent(String uid) {
+    uid.toUpperCase();
+
+    for (int i = 0; i < STUDENT_COUNT; i++) {
+        if (students[i].uid == uid) {
+            return i;
+        }
+    }
+
+    return -1;
 }
 
 bool readCard(
@@ -254,99 +278,20 @@ long readUltrasonicCM() {
 }
 
 // ============================================================================
-// WiFi + backend communication
+// Dummy identity verification (placeholder for the future ML face-match step)
 // ============================================================================
 
-bool wifiConnected() {
-    return WiFi.status() == WL_CONNECTED;
-}
+// TODO (ML phase): replace this with a real call to the camera + face-match
+// service. For now it always passes, so the rest of the flow (blockchain
+// logging, gate control) can be built and tested without the ML model.
+bool verifyIdentityDummy(Student& student) {
+    Serial.print("Face verification (DUMMY): checking ");
+    Serial.println(student.name);
 
-// Blocks up to timeoutMs waiting for WiFi. Used at boot and before a scan
-// if the link dropped.
-bool connectWiFi(unsigned long timeoutMs) {
-    if (wifiConnected()) return true;
+    delay(500); // simulate the time a real verification call would take
 
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-    unsigned long start = millis();
-    while (!wifiConnected() && millis() - start < timeoutMs) {
-        delay(250);
-        Serial.print(".");
-    }
-    Serial.println();
-    return wifiConnected();
-}
-
-struct ScanResult {
-    bool networkOk;      // false => couldn't get a valid answer from the backend
-    bool granted;
-    String reason;
-    String message;      // short text from the backend, e.g. "Entry granted"
-    String studentName;
-};
-
-// Asks the backend whether this card may pass. FAILS CLOSED: any network,
-// HTTP or parsing problem returns networkOk=false, granted=false.
-ScanResult askBackend(const String& uid, const char* direction) {
-    ScanResult res = {false, false, "", "", ""};
-
-    if (!wifiConnected()) {
-        Serial.println("WiFi down, trying to reconnect...");
-        WiFi.disconnect();
-        if (!connectWiFi(5000)) {
-            res.reason = "wifi_down";
-            return res;
-        }
-    }
-
-    String url = String("http://") + BACKEND_HOST + ":" + BACKEND_PORT + "/gate/scan";
-
-    JsonDocument req;
-    req["uid"] = uid;
-    req["direction"] = direction;
-    String body;
-    serializeJson(req, body);
-
-    HTTPClient http;
-    http.setTimeout(HTTP_TIMEOUT_MS);
-    http.begin(url);
-    http.addHeader("Content-Type", "application/json");
-    http.addHeader("X-Device-Api-Key", DEVICE_API_KEY);
-
-    Serial.print("POST ");
-    Serial.print(url);
-    Serial.print(" ");
-    Serial.println(body);
-
-    int code = http.POST(body);
-
-    if (code != 200) {
-        Serial.print("Backend error, HTTP code: ");
-        Serial.println(code);
-        res.reason = (code == 401) ? "bad_device_key" : "server_error";
-        http.end();
-        return res;
-    }
-
-    String payload = http.getString();
-    http.end();
-
-    JsonDocument doc;
-    DeserializationError err = deserializeJson(doc, payload);
-    if (err) {
-        Serial.print("Bad JSON from backend: ");
-        Serial.println(err.c_str());
-        res.reason = "bad_response";
-        return res;
-    }
-
-    res.networkOk = true;
-    res.granted = doc["granted"] | false;
-    res.reason = String((const char*)(doc["reason"] | ""));
-    res.message = String((const char*)(doc["message"] | ""));
-    res.studentName = String((const char*)(doc["student_name"] | ""));
-    return res;
+    Serial.println("Face verification (DUMMY): PASS");
+    return true;
 }
 
 // ============================================================================
@@ -400,73 +345,279 @@ void deny(
 }
 
 // ============================================================================
-// Scan processing (identical for entry and exit)
+// Entry / exit processing
 // ============================================================================
 
-void showReady() {
-    lcdShow("ATLAS GATE", "READY");
-}
-
-void processScan(bool isEntry, const String& uid) {
-    const char* direction = isEntry ? "entry" : "exit";
-    int r = isEntry ? ENTRY_R : EXIT_R;
-    int g = isEntry ? ENTRY_G : EXIT_G;
-    int b = isEntry ? ENTRY_B : EXIT_B;
-    int servoPin = isEntry ? ENTRY_SERVO_PIN : EXIT_SERVO_PIN;
+void processEntry(String uid) {
 
     Serial.println();
-    Serial.println(isEntry ? "========== ENTRY ==========" : "========== EXIT ==========");
-    Serial.print("Card UID: ");
-    Serial.println(uid);
+    Serial.println("========== ENTRY ==========");
 
-    lcdShow(isEntry ? "ENTRY GATE" : "EXIT GATE", "VERIFYING...");
+    lcdShow(
+        "ENTRY GATE",
+        "SCANNING..."
+    );
 
-    ScanResult res = askBackend(uid, direction);
+    int index = findStudent(uid);
 
-    // ---- Couldn't reach / trust the backend: stay closed ----
-    if (!res.networkOk) {
-        Serial.print("FAIL CLOSED: ");
-        Serial.println(res.reason);
+    if (index == -1) {
 
-        if (res.reason == "bad_device_key") {
-            lcdShow("CONFIG ERROR", "BAD DEVICE KEY");
-        } else if (res.reason == "wifi_down") {
-            lcdShow("NO WIFI", "GATE CLOSED");
-        } else {
-            lcdShow("SERVER OFFLINE", "GATE CLOSED");
-        }
-        deny(r, g, b);
-        delay(1500);
-        showReady();
+        Serial.println("UNKNOWN CARD");
+
+        lcdShow(
+            "UNKNOWN CARD",
+            "ENTRY DENIED"
+        );
+
+        deny(
+            ENTRY_R,
+            ENTRY_G,
+            ENTRY_B
+        );
+
+        delay(800);
+
+        lcdShow(
+            "ATLAS GATE",
+            "READY"
+        );
+
         return;
     }
 
-    // ---- Backend said no ----
-    if (!res.granted) {
-        Serial.print("DENIED: ");
-        Serial.println(res.reason);
+    Student& student = students[index];
 
-        lcdShow(res.studentName.length() ? res.studentName : String("ACCESS DENIED"),
-                res.message.length() ? res.message : res.reason);
-        deny(r, g, b);
-        delay(1000);
-        showReady();
+    Serial.print("Student: ");
+    Serial.println(student.name);
+
+    if (student.inside) {
+
+        Serial.println("ALREADY INSIDE");
+
+        lcdShow(
+            student.name,
+            "ALREADY INSIDE"
+        );
+
+        deny(
+            ENTRY_R,
+            ENTRY_G,
+            ENTRY_B
+        );
+
+        delay(800);
+
+        lcdShow(
+            "ATLAS GATE",
+            "READY"
+        );
+
         return;
     }
 
-    // ---- Granted: open NOW. The backend logs to the blockchain on its own
-    // in the background, so the gate never waits on the chain. ----
-    Serial.println(isEntry ? "ENTRY GRANTED" : "EXIT GRANTED");
+    lcdShow(
+        student.name,
+        "VERIFYING..."
+    );
 
-    lcdShow(res.studentName, res.message);
-    rgbGreen(r, g, b);
+    bool verified = verifyIdentityDummy(student);
+
+    if (!verified) {
+
+        Serial.println("VERIFICATION FAILED");
+
+        lcdShow(
+            student.name,
+            "FACE MISMATCH"
+        );
+
+        deny(
+            ENTRY_R,
+            ENTRY_G,
+            ENTRY_B
+        );
+
+        delay(800);
+
+        lcdShow(
+            "ATLAS GATE",
+            "READY"
+        );
+
+        return;
+    }
+
+    student.inside = true;
+
+    Serial.println("ENTRY GRANTED");
+
+    lcdShow(
+        student.name,
+        "ENTRY GRANTED"
+    );
+
+    rgbGreen(
+        ENTRY_R,
+        ENTRY_G,
+        ENTRY_B
+    );
+
     beepSuccess();
 
-    gateOpen(servoPin, r, g, b);
+    gateOpen(
+        ENTRY_SERVO_PIN,
+        ENTRY_R,
+        ENTRY_G,
+        ENTRY_B
+    );
 
-    lcdShow(res.studentName, isEntry ? "INSIDE" : "OUTSIDE");
+    lcdShow(
+        student.name,
+        "INSIDE"
+    );
+
     delay(1000);
-    showReady();
+
+    lcdShow(
+        "ATLAS GATE",
+        "READY"
+    );
+}
+
+void processExit(String uid) {
+
+    Serial.println();
+    Serial.println("========== EXIT ==========");
+
+    lcdShow(
+        "EXIT GATE",
+        "SCANNING..."
+    );
+
+    int index = findStudent(uid);
+
+    if (index == -1) {
+
+        Serial.println("UNKNOWN CARD");
+
+        lcdShow(
+            "UNKNOWN CARD",
+            "EXIT DENIED"
+        );
+
+        deny(
+            EXIT_R,
+            EXIT_G,
+            EXIT_B
+        );
+
+        delay(800);
+
+        lcdShow(
+            "ATLAS GATE",
+            "READY"
+        );
+
+        return;
+    }
+
+    Student& student = students[index];
+
+    Serial.print("Student: ");
+    Serial.println(student.name);
+
+    if (!student.inside) {
+
+        Serial.println("ALREADY OUTSIDE");
+
+        lcdShow(
+            student.name,
+            "ALREADY OUTSIDE"
+        );
+
+        deny(
+            EXIT_R,
+            EXIT_G,
+            EXIT_B
+        );
+
+        delay(800);
+
+        lcdShow(
+            "ATLAS GATE",
+            "READY"
+        );
+
+        return;
+    }
+
+    lcdShow(
+        student.name,
+        "VERIFYING..."
+    );
+
+    bool verified = verifyIdentityDummy(student);
+
+    if (!verified) {
+
+        Serial.println("VERIFICATION FAILED");
+
+        lcdShow(
+            student.name,
+            "FACE MISMATCH"
+        );
+
+        deny(
+            EXIT_R,
+            EXIT_G,
+            EXIT_B
+        );
+
+        delay(800);
+
+        lcdShow(
+            "ATLAS GATE",
+            "READY"
+        );
+
+        return;
+    }
+
+    student.inside = false;
+
+    Serial.println("EXIT GRANTED");
+
+    lcdShow(
+        student.name,
+        "EXIT GRANTED"
+    );
+
+    rgbGreen(
+        EXIT_R,
+        EXIT_G,
+        EXIT_B
+    );
+
+    beepSuccess();
+
+    gateOpen(
+        EXIT_SERVO_PIN,
+        EXIT_R,
+        EXIT_G,
+        EXIT_B
+    );
+
+    lcdShow(
+        student.name,
+        "OUTSIDE"
+    );
+
+    delay(1000);
+
+    lcdShow(
+        "ATLAS GATE",
+        "READY"
+    );
 }
 
 // ============================================================================
@@ -591,14 +742,16 @@ void setup() {
 
     Serial.println();
     Serial.println("==============================");
-    Serial.println("      ATLAS GATE (integrated)");
-    Serial.println("  RFID + ULTRASONIC + BACKEND");
+    Serial.println("      ATLAS MILESTONE 3");
+    Serial.println("  RFID + ULTRASONIC + DUMMY ID");
     Serial.println("==============================");
 
     Serial.println("ENTRY SERVO      = GPIO 25");
     Serial.println("EXIT SERVO       = GPIO 33");
     Serial.println("ULTRASONIC TRIG  = GPIO 15");
     Serial.println("ULTRASONIC ECHO  = GPIO 34");
+    Serial.println("Camera: ESP32-CAM present as a separate board,");
+    Serial.println("not wired in yet - will connect over WiFi in the ML phase.");
 
 #if ATLAS_LEDC_NEW_API
     Serial.println("LEDC API detected: NEW (pin-based, core 3.x+)");
@@ -630,28 +783,9 @@ void setup() {
     Serial.println("SERVO SELF-TEST complete.");
     Serial.println();
 
-    // ---- WiFi ----
-    lcdShow("CONNECTING WIFI", WIFI_SSID);
-    Serial.print("Connecting to WiFi: ");
-    Serial.println(WIFI_SSID);
-    if (connectWiFi(15000)) {
-        Serial.print("WiFi OK, IP: ");
-        Serial.println(WiFi.localIP());
-        Serial.print("Backend: http://");
-        Serial.print(BACKEND_HOST);
-        Serial.print(":");
-        Serial.println(BACKEND_PORT);
-        lcdShow("WIFI OK", WiFi.localIP().toString());
-        delay(1200);
-    } else {
-        Serial.println("WiFi FAILED - will keep retrying on each scan. Gate fails closed.");
-        lcdShow("WIFI FAILED", "CHECK config.h");
-        delay(2000);
-    }
-
     Serial.println("System ready.");
 
-    delay(300);
+    delay(500);
 
     lcdShow(
         "ATLAS GATE",
@@ -671,7 +805,7 @@ void loop() {
             uid
         )
     ) {
-        processScan(true, uid);
+        processEntry(uid);
         delay(500);
     }
 
@@ -683,7 +817,7 @@ void loop() {
             uid
         )
     ) {
-        processScan(false, uid);
+        processExit(uid);
         delay(500);
     }
 
